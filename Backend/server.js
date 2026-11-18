@@ -1,22 +1,28 @@
-
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+const connectDB = require("./config/db");
+require("dotenv").config();
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.get('/api/health', (req, res) => {
+app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Personal Library API is running!'
+    message: "Personal Library API is running!",
   });
 });
 
 const PORT = process.env.PORT;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port => localhost:${PORT}`);
-});
+const startServer = async () => {
+  await connectDB();
+
+  app.listen(PORT, () => {
+    console.log(`Server Running On Port => localhost:${PORT}`);
+  });
+};
+
+startServer();
