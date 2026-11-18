@@ -26,7 +26,35 @@ const createBook = async (req, res) => {
 
 const getBooks = async (req, res) => {
   try {
-    const books = await Book.find().sort({ createdAt: -1 });
+    const { search, status } = req.query;
+
+    const filter = {};
+
+    if (search && search.trim()) {
+      const escapedSearch = search
+        .trim()
+        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      filter.title = {
+        $regex: escapedSearch,
+        $options: "i",
+      };
+    }
+
+    if (status) {
+      if (!["reading", "read"].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid book status",
+        });
+      }
+
+      filter.status = status;
+    }
+
+    const books = await Book.find(filter).sort({
+      createdAt: -1,
+    });
 
     res.status(200).json({
       success: true,
