@@ -12,6 +12,24 @@ const selectedStatus = ref('all')
 const isLoading = ref(false)
 const errorMessage = ref('')
 
+const deleteBook = async (bookId) => {
+  const isConfirmed = window.confirm('آیا از حذف این کتاب اطمینان داری؟')
+
+  if (!isConfirmed) return
+
+  try {
+    await api.delete(`/books/${bookId}`)
+
+    books.value = books.value.filter((book) => book._id !== bookId)
+
+    if (editingBook.value?._id === bookId) {
+      editingBook.value = null
+    }
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || 'حذف کتاب با خطا مواجه شد.'
+  }
+}
+
 const fetchBooks = async () => {
   try {
     isLoading.value = true
@@ -111,7 +129,13 @@ onMounted(() => {
       v-else-if="filteredBooks.length"
       class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
     >
-      <BookCard v-for="book in filteredBooks" :key="book._id" :book="book" @edit="startEditing" />
+      <BookCard
+        v-for="book in filteredBooks"
+        :key="book._id"
+        :book="book"
+        @edit="startEditing"
+        @delete="deleteBook"
+      />
     </div>
 
     <div v-else class="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
