@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
+const bookRoutes = require("./routes/bookRoutes");
 require("dotenv").config();
 
 const app = express();
@@ -14,6 +15,8 @@ app.get("/api/health", (req, res) => {
     message: "Personal Library API is running!",
   });
 });
+
+app.use("/api/books", bookRoutes);
 
 const PORT = process.env.PORT;
 
