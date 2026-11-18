@@ -1,37 +1,35 @@
 <script setup>
-import { ref, computed } from 'vue'
-import AddBookForm from './AddBookForm.vue'
+import { ref, computed, onMounted } from 'vue'
 import BookCard from './BookCard.vue'
+import AddBookForm from './AddBookForm.vue'
+import api from '@/services/api'
+
+const books = ref([])
 
 const searchQuery = ref('')
 const selectedStatus = ref('all')
+
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const fetchBooks = async () => {
+  try {
+    isLoading.value = true
+    errorMessage.value = ''
+
+    const response = await api.get('/books')
+
+    books.value = response.data.data
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || 'دریافت کتاب‌ها با خطا مواجه شد.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const addBook = (newBook) => {
   books.value.unshift(newBook)
 }
-
-const books = ref([
-  {
-    _id: '1',
-    title: 'اثر مرکب',
-    author: 'دارن هاردی',
-    description: 'کتابی درباره تأثیر تصمیم‌های کوچک و مداوم در زندگی.',
-    status: 'read',
-  },
-  {
-    _id: '2',
-    title: 'عادت‌های اتمی',
-    author: 'جیمز کلیر',
-    description: 'راهکارهایی برای ایجاد عادت‌های مثبت و حذف عادت‌های بد.',
-    status: 'reading',
-  },
-  {
-    _id: '3',
-    title: 'چهار اثر از فلورانس',
-    author: 'فلورانس اسکاول شین',
-    description: 'نگاهی به نگرش، باورها و تأثیر آن‌ها بر زندگی.',
-    status: 'read',
-  },
-])
 
 const filteredBooks = computed(() => {
   return books.value.filter((book) => {
@@ -42,11 +40,16 @@ const filteredBooks = computed(() => {
     return matchesSearch && matchesStatus
   })
 })
+
+onMounted(() => {
+  fetchBooks()
+})
 </script>
 
 <template>
   <section>
     <AddBookForm @book-added="addBook" />
+
     <div class="mb-7 flex flex-col gap-4 sm:flex-row">
       <input
         v-model="searchQuery"
@@ -67,7 +70,22 @@ const filteredBooks = computed(() => {
 
     <div class="mb-5 text-sm text-gray-500">تعداد کتاب‌ها: {{ filteredBooks.length }}</div>
 
-    <div v-if="filteredBooks.length" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-if="isLoading" class="py-10 text-center text-gray-500">در حال دریافت کتاب‌ها...</div>
+
+    <div v-else-if="errorMessage" class="rounded-xl bg-red-50 p-6 text-center">
+      <p class="mb-4 text-sm text-red-600">
+        {{ errorMessage }}
+      </p>
+
+      <button @click="fetchBooks" class="rounded-lg bg-gray-900 px-5 py-2 text-sm text-white">
+        تلاش مجدد
+      </button>
+    </div>
+
+    <div
+      v-else-if="filteredBooks.length"
+      class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+    >
       <BookCard v-for="book in filteredBooks" :key="book._id" :book="book" />
     </div>
 
