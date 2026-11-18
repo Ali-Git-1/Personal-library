@@ -41,6 +41,26 @@ const filteredBooks = computed(() => {
   })
 })
 
+const editingBook = ref(null)
+
+const startEditing = (book) => {
+  editingBook.value = book
+}
+
+const updateBook = (updatedBook) => {
+  const index = books.value.findIndex((book) => book._id === updatedBook._id)
+
+  if (index !== -1) {
+    books.value[index] = updatedBook
+  }
+
+  editingBook.value = null
+}
+
+const cancelEdit = () => {
+  editingBook.value = null
+}
+
 onMounted(() => {
   fetchBooks()
 })
@@ -48,7 +68,12 @@ onMounted(() => {
 
 <template>
   <section>
-    <AddBookForm @book-added="addBook" />
+    <AddBookForm
+      :editing-book="editingBook"
+      @book-added="addBook"
+      @book-updated="updateBook"
+      @cancel-edit="cancelEdit"
+    />
 
     <div class="mb-7 flex flex-col gap-4 sm:flex-row">
       <input
@@ -86,7 +111,7 @@ onMounted(() => {
       v-else-if="filteredBooks.length"
       class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
     >
-      <BookCard v-for="book in filteredBooks" :key="book._id" :book="book" />
+      <BookCard v-for="book in filteredBooks" :key="book._id" :book="book" @edit="startEditing" />
     </div>
 
     <div v-else class="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">

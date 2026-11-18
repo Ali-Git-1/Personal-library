@@ -1,8 +1,15 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import api from '@/services/api'
 
-const emit = defineEmits(['book-added'])
+const props = defineProps({
+  editingBook: {
+    type: Object,
+    default: null,
+  },
+})
+
+const emit = defineEmits(['book-added', 'book-updated', 'cancel-edit'])
 
 const title = ref('')
 const author = ref('')
@@ -11,6 +18,30 @@ const status = ref('reading')
 
 const isLoading = ref(false)
 const errorMessage = ref('')
+
+const resetForm = () => {
+  title.value = ''
+  author.value = ''
+  description.value = ''
+  status.value = 'reading'
+  errorMessage.value = ''
+}
+
+watch(
+  () => props.editingBook,
+  (book) => {
+    if (book) {
+      title.value = book.title
+      author.value = book.author
+      description.value = book.description || ''
+      status.value = book.status
+      errorMessage.value = ''
+    } else {
+      resetForm()
+    }
+  },
+  { immediate: true },
+)
 
 const handleSubmit = async () => {
   errorMessage.value = ''
@@ -23,21 +54,26 @@ const handleSubmit = async () => {
   try {
     isLoading.value = true
 
-    const response = await api.post('/books', {
-      title: title.value,
-      author: author.value,
-      description: description.value,
+    const bookData = {
+      title: title.value.trim(),
+      author: author.value.trim(),
+      description: description.value.trim(),
       status: status.value,
-    })
+    }
 
-    emit('book-added', response.data.data)
+    if (props.editingBook) {
+      const response = await api.put(`/books/${props.editingBook._id}`, bookData)
 
-    title.value = ''
-    author.value = ''
-    description.value = ''
-    status.value = 'reading'
+      emit('book-updated', response.data.data)
+    } else {
+      const response = await api.post('/books', bookData)
+
+      emit('book-added', response.data.data)
+    }
+
+    resetForm()
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || 'ثبت کتاب با خطا مواجه شد.'
+    errorMessage.value = error.response?.data?.message || 'عملیات با خطا مواجه شد.'
   } finally {
     isLoading.value = false
   }
@@ -46,7 +82,9 @@ const handleSubmit = async () => {
 
 <template>
   <form @submit.prevent="handleSubmit" class="mb-8 rounded-xl border border-gray-200 bg-white p-6">
-    <h3 class="mb-5 text-lg font-bold text-gray-800">افزودن کتاب جدید</h3>
+    <h3 class="mb-5 text-lg font-bold text-gray-800">
+      {{ editingBook ? 'ویرایش کتاب' : 'افزودن کتاب جدید' }}
+    </h3>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <input
@@ -83,12 +121,23 @@ const handleSubmit = async () => {
       {{ errorMessage }}
     </p>
 
-    <button
-      type="submit"
-      :disabled="isLoading"
-      class="mt-5 rounded-lg bg-gray-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      {{ isLoading ? 'در حال ثبت...' : 'ثبت کتاب' }}
-    </button>
+    <div class="mt-5 flex gap-3">
+      <button
+        type="submit"
+        :disabled="isLoading"
+        class="rounded-lg bg-gray-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50"
+      >
+        {{ isLoading ? 'در حال ذخیره...' : editingBook ? 'ذخیره تغییرات' : 'ثبت کتاب' }}
+      </button>
+
+      <button
+        v-if="editingBook"
+        type="button"
+        @click="emit('cancel-edit')"
+        class="rounded-lg border border-gray-200 px-5 py-3 text-sm text-gray-600 hover:bg-gray-50"
+      >
+        انصراف
+      </button>
+    </div>
   </form>
 </template>
