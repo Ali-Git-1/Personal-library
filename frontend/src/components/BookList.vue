@@ -1,9 +1,13 @@
 <script setup>
 import { ref, computed } from 'vue'
+import AddBookForm from './AddBookForm.vue'
 import BookCard from './BookCard.vue'
 
 const searchQuery = ref('')
 const selectedStatus = ref('all')
+const addBook = (newBook) => {
+  books.value.unshift(newBook)
+}
 
 const books = ref([
   {
@@ -42,6 +46,7 @@ const filteredBooks = computed(() => {
 
 <template>
   <section>
+    <AddBookForm @book-added="addBook" />
     <div class="mb-7 flex flex-col gap-4 sm:flex-row">
       <input
         v-model="searchQuery"
